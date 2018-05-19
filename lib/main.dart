@@ -3,11 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-Future<void> main() async {
-
-
-  runApp(HedgelogApp());
-}
+main() => runApp(HedgelogApp());
 
 const appName = 'Hedgelog';
 
@@ -18,22 +14,24 @@ class HedgelogApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: appName,
-      home: const HomePage(title: appName),
+      home:
+          HomePage(FirestoreTaskRepository(Firestore.instance), title: appName),
     );
   }
 }
 
 class HomePage extends StatelessWidget {
-  const HomePage({Key key, this.title}) : super(key: key);
+  HomePage(this.taskRepository, {Key key, this.title}) : super(key: key);
 
   final String title;
+  final TaskRepository taskRepository;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: StreamBuilder(
-        stream: Firestore.instance.collection('tasks').orderBy('waitHours').snapshots(),
+        stream: taskRepository.taskStream,
         builder: _widgetFactory,
       ),
     );
@@ -50,9 +48,9 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildListItem(BuildContext context, DocumentSnapshot document) {
+  Widget _buildListItem(BuildContext context, DocumentSnapshot task) {
     return ListTile(
-      key: ValueKey(document.documentID),
+      key: ValueKey(task.documentID),
       title: Container(
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0x80000000)),
@@ -62,28 +60,14 @@ class HomePage extends StatelessWidget {
         child: Row(
           children: <Widget>[
             Expanded(
-              child: Text(document['name']),
+              child: Text(task['name']),
             ),
-            _iconFor(document)
+            _iconFor(task)
           ],
         ),
       ),
-      onTap: () => Firestore.instance.runTransaction((transaction) async {
-            DocumentSnapshot freshSnap =
-                await transaction.get(document.reference);
-            await transaction.update(freshSnap.reference, {
-              'nextTime':
-                  DateTime.now().add(Duration(hours: freshSnap['waitHours']))
-            });
-          }),
-      onLongPress: () => Firestore.instance.runTransaction((transaction) async {
-        DocumentSnapshot freshSnap =
-        await transaction.get(document.reference);
-        await transaction.update(freshSnap.reference, {
-          'nextTime':
-          DateTime.now().subtract(Duration(minutes: 1))
-        });
-      }),
+      onTap: () => taskRepository.checkTask(task),
+      onLongPress: () => taskRepository.uncheckTask(task),
     );
   }
 
@@ -94,5 +78,46 @@ class HomePage extends StatelessWidget {
       isNeeded ? Icons.close : Icons.check,
       color: isNeeded ? Colors.red : Colors.green,
     );
+  }
+}
+
+abstract class TaskRepository {
+  Stream<QuerySnapshot> get taskStream;
+
+  checkTask(DocumentSnapshot task);
+
+  uncheckTask(DocumentSnapshot task);
+}
+
+class FirestoreTaskRepository implements TaskRepository {
+  final Firestore firestore;
+
+  FirestoreTaskRepository(this.firestore)
+      : taskStream =
+            firestore.collection('tasks').orderBy('waitHours').snapshots();
+
+  @override
+  final Stream<QuerySnapshot> taskStream;
+
+  @override
+  checkTask(DocumentSnapshot task) {
+    firestore.runTransaction((transaction) async {
+      DocumentSnapshot freshSnap =
+      await transaction.get(task.reference);
+      await transaction.update(freshSnap.reference, {
+        'nextTime':
+        DateTime.now().add(Duration(hours: freshSnap['waitHours']))
+      });
+    });
+  }
+
+  @override
+  uncheckTask(DocumentSnapshot task) {
+    firestore.runTransaction((transaction) async {
+      DocumentSnapshot freshSnap =
+      await transaction.get(task.reference);
+      await transaction.update(freshSnap.reference,
+          {'nextTime': DateTime.now().subtract(Duration(minutes: 1))});
+    });
   }
 }

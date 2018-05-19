@@ -1,4 +1,4 @@
-# hedgelog
+# Hedgelog
 
 An app for keeping track of hedgehog care. This app is still in very early development.
 
