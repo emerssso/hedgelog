@@ -33,7 +33,7 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: StreamBuilder(
-        stream: Firestore.instance.collection('tasks').snapshots(),
+        stream: Firestore.instance.collection('tasks').orderBy('waitHours').snapshots(),
         builder: _widgetFactory,
       ),
     );
@@ -76,6 +76,14 @@ class HomePage extends StatelessWidget {
                   DateTime.now().add(Duration(hours: freshSnap['waitHours']))
             });
           }),
+      onLongPress: () => Firestore.instance.runTransaction((transaction) async {
+        DocumentSnapshot freshSnap =
+        await transaction.get(document.reference);
+        await transaction.update(freshSnap.reference, {
+          'nextTime':
+          DateTime.now().subtract(Duration(minutes: 1))
+        });
+      }),
     );
   }
 
