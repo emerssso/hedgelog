@@ -2,11 +2,7 @@ name: hedgelog
 description: An app for keeping track of hedgehog care
 
 dependencies:
-  google_sign_in: 3.0.2
-  firebase_auth: 0.5.5
-  firebase_database: 0.4.6
-  firebase_storage: 0.3.3
-  firebase_analytics: 0.3.3
+  cloud_firestore: ^0.7.0
   flutter:
     sdk: flutter
 
