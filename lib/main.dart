@@ -93,8 +93,10 @@ class FirestoreTaskRepository implements TaskRepository {
   final Firestore firestore;
 
   FirestoreTaskRepository(this.firestore)
-      : taskStream =
-            firestore.collection('tasks').orderBy('waitHours').snapshots();
+      : taskStream = firestore
+            .collection('tasks')
+            .orderBy('nextTime', descending: false)
+            .snapshots();
 
   @override
   final Stream<QuerySnapshot> taskStream;
@@ -102,11 +104,9 @@ class FirestoreTaskRepository implements TaskRepository {
   @override
   checkTask(DocumentSnapshot task) {
     firestore.runTransaction((transaction) async {
-      DocumentSnapshot freshSnap =
-      await transaction.get(task.reference);
+      DocumentSnapshot freshSnap = await transaction.get(task.reference);
       await transaction.update(freshSnap.reference, {
-        'nextTime':
-        DateTime.now().add(Duration(hours: freshSnap['waitHours']))
+        'nextTime': DateTime.now().add(Duration(hours: freshSnap['waitHours']))
       });
     });
   }
@@ -114,8 +114,7 @@ class FirestoreTaskRepository implements TaskRepository {
   @override
   uncheckTask(DocumentSnapshot task) {
     firestore.runTransaction((transaction) async {
-      DocumentSnapshot freshSnap =
-      await transaction.get(task.reference);
+      DocumentSnapshot freshSnap = await transaction.get(task.reference);
       await transaction.update(freshSnap.reference,
           {'nextTime': DateTime.now().subtract(Duration(minutes: 1))});
     });
