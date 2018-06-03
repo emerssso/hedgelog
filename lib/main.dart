@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:async/async.dart';
+import 'package:intl/intl.dart';
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -15,61 +17,79 @@ class HedgelogApp extends StatelessWidget {
     return MaterialApp(
       title: appName,
       home:
-          HomePage(FirestoreTaskRepository(Firestore.instance), title: appName),
+          HomePage(FirestoreRepository(Firestore.instance), title: appName),
     );
   }
 }
 
 class HomePage extends StatelessWidget {
-  HomePage(this.taskRepository, {Key key, this.title}) : super(key: key);
+  HomePage(this.repository, {Key key, this.title}) : super(key: key);
 
   final String title;
-  final TaskRepository taskRepository;
+  final DataRepository repository;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: StreamBuilder(
-        stream: taskRepository.taskStream,
-        builder: _widgetFactory,
-      ),
+          stream: StreamZip(
+              [repository.taskStream, repository.currentTempStream]),
+          builder: _taskListFactory,
+        ),
     );
   }
 
-  Widget _widgetFactory(BuildContext context, AsyncSnapshot snapshot) {
+  Widget _taskListFactory(BuildContext context, AsyncSnapshot snapshot) {
     if (!snapshot.hasData) return const Text('Loading...');
+
+    QuerySnapshot tasks = snapshot.data[0];
+    DocumentSnapshot temperatureDoc = snapshot.data[1];
+
     return ListView.builder(
-      itemCount: snapshot.data.documents.length,
+      itemCount: tasks.documents.length + 1,
       padding: const EdgeInsets.only(top: 10.0),
       itemExtent: 55.0,
-      itemBuilder: (context, index) =>
-          _buildListItem(context, snapshot.data.documents[index]),
+      itemBuilder: (context, index) => index == 0
+          ? _buildHeader(context, temperatureDoc)
+          : _buildListItem(context, tasks.documents[index - 1]),
     );
   }
 
-  Widget _buildListItem(BuildContext context, DocumentSnapshot task) {
-    return ListTile(
-      key: ValueKey(task.documentID),
-      title: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: const Color(0x80000000)),
-          borderRadius: BorderRadius.circular(5.0),
+  Widget _buildHeader(BuildContext context, DocumentSnapshot snapshot) =>
+      ListTile(
+        key: ValueKey(snapshot.documentID),
+        title: Container(
+          decoration: _listDecoration,
+          padding: const EdgeInsets.all(12.0),
+          child: Text("Current temperature "
+                "(at ${_dateFormat.format(snapshot.data['time'])}): "
+                "${_formatDouble(snapshot.data['temp'])}°F"),
         ),
-        padding: const EdgeInsets.all(10.0),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(task['name']),
-            ),
-            _iconFor(task)
-          ],
-        ),
-      ),
-      onTap: () => taskRepository.checkTask(task),
-      onLongPress: () => taskRepository.uncheckTask(task),
-    );
+      );
+
+  String _formatDouble(double n) {
+    return n.toStringAsFixed(n.truncateToDouble() == n ? 0 : 2);
   }
+
+  Widget _buildListItem(BuildContext context, DocumentSnapshot task) =>
+      ListTile(
+        key: ValueKey(task.documentID),
+        title: Container(
+          decoration: _listDecoration,
+          padding: const EdgeInsets.all(10.0),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(task['name']),
+              ),
+              _iconFor(task)
+            ],
+          ),
+        ),
+        onTap: () => repository.checkTask(task),
+        onLongPress: () => repository.uncheckTask(task),
+      );
 
   Icon _iconFor(DocumentSnapshot task) {
     final isNeeded = task['nextTime']?.isBefore(DateTime.now()) ?? true;
@@ -79,27 +99,39 @@ class HomePage extends StatelessWidget {
       color: isNeeded ? Colors.red : Colors.green,
     );
   }
+
+  final _listDecoration = BoxDecoration(
+    border: Border.all(color: const Color(0x80000000)),
+    borderRadius: BorderRadius.circular(5.0),
+  );
 }
 
-abstract class TaskRepository {
+abstract class DataRepository {
   Stream<QuerySnapshot> get taskStream;
+
+  Stream<DocumentSnapshot> get currentTempStream;
 
   checkTask(DocumentSnapshot task);
 
   uncheckTask(DocumentSnapshot task);
 }
 
-class FirestoreTaskRepository implements TaskRepository {
+class FirestoreRepository implements DataRepository {
   final Firestore firestore;
 
-  FirestoreTaskRepository(this.firestore)
+  FirestoreRepository(this.firestore)
       : taskStream = firestore
             .collection('tasks')
             .orderBy('nextTime', descending: false)
-            .snapshots();
+            .snapshots(),
+        currentTempStream =
+            firestore.document('temperatures/current').snapshots();
 
   @override
   final Stream<QuerySnapshot> taskStream;
+
+  @override
+  final Stream<DocumentSnapshot> currentTempStream;
 
   @override
   checkTask(DocumentSnapshot task) {
@@ -120,3 +152,5 @@ class FirestoreTaskRepository implements TaskRepository {
     });
   }
 }
+
+final _dateFormat = DateFormat.Hm().addPattern("'on'").add_Md();
