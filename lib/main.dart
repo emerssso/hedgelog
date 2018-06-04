@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:rxdart/rxdart.dart';
 import 'package:intl/intl.dart';
 
 import 'package:flutter/material.dart';
@@ -16,71 +15,45 @@ class HedgelogApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: appName,
-      home:
-          HomePage(FirestoreRepository(Firestore.instance), title: appName),
+      home: BottomNav(),
     );
   }
 }
 
-class HomePage extends StatelessWidget {
-  HomePage(this.repository, {Key key, this.title}) : super(key: key);
+class TasksPage extends StatelessWidget {
+  TasksPage(this._repository, {Key key}) : super(key: key);
 
-  final String title;
-  final DataRepository repository;
+  final DataRepository _repository;
 
   @override
   Widget build(BuildContext context) {
-    final zip = Observable.zip2(repository.taskStream, repository.currentTempStream,
-        (first, second) => <Object>[first, second],
-    );
-
     //zip.listen((_) => print("updated data!"));
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: StreamBuilder(
-          stream: zip,
-          builder: _taskListFactory,
-        ),
+    return StreamBuilder(
+      stream: _repository.taskStream,
+      builder: _taskListFactory,
     );
   }
 
   Widget _taskListFactory(BuildContext context, AsyncSnapshot snapshot) {
     if (!snapshot.hasData) return const Text('Loading...');
 
-    QuerySnapshot tasks = snapshot.data[0];
-    DocumentSnapshot temperatureDoc = snapshot.data[1];
-
     return ListView.builder(
-      itemCount: tasks.documents.length + 1,
+      itemCount: snapshot.data.documents.length,
       padding: const EdgeInsets.only(top: 10.0),
       itemExtent: 55.0,
-      itemBuilder: (context, index) => index == 0
-          ? _buildHeader(context, temperatureDoc)
-          : _buildListItem(context, tasks.documents[index - 1]),
+      itemBuilder: (context, index) =>
+          _buildListItem(context, snapshot.data.documents[index]),
     );
-  }
-
-  Widget _buildHeader(BuildContext context, DocumentSnapshot snapshot) =>
-      ListTile(
-        key: ValueKey(snapshot.documentID),
-        title: Container(
-          decoration: _listDecoration,
-          padding: const EdgeInsets.all(12.0),
-          child: Text("Current temperature "
-                "(at ${_dateFormat.format(snapshot.data['time'])}): "
-                "${_formatDouble(snapshot.data['temp'])}°F"),
-        ),
-      );
-
-  String _formatDouble(double n) {
-    return n.toStringAsFixed(n.truncateToDouble() == n ? 0 : 2);
   }
 
   Widget _buildListItem(BuildContext context, DocumentSnapshot task) =>
       ListTile(
         key: ValueKey(task.documentID),
         title: Container(
-          decoration: _listDecoration,
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0x80000000)),
+            borderRadius: BorderRadius.circular(5.0),
+          ),
           padding: const EdgeInsets.all(10.0),
           child: Row(
             children: <Widget>[
@@ -91,8 +64,8 @@ class HomePage extends StatelessWidget {
             ],
           ),
         ),
-        onTap: () => repository.checkTask(task),
-        onLongPress: () => repository.uncheckTask(task),
+        onTap: () => _repository.checkTask(task),
+        onLongPress: () => _repository.uncheckTask(task),
       );
 
   Icon _iconFor(DocumentSnapshot task) {
@@ -101,13 +74,204 @@ class HomePage extends StatelessWidget {
     return Icon(
       isNeeded ? Icons.close : Icons.check,
       color: isNeeded ? Colors.red : Colors.green,
+      size: 24.0,
+    );
+  }
+}
+
+class TemperaturePage extends StatelessWidget {
+  final DataRepository _repository;
+
+  TemperaturePage(this._repository);
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: _repository.currentTempStream,
+      builder: _buildHeader,
     );
   }
 
-  final _listDecoration = BoxDecoration(
-    border: Border.all(color: const Color(0x80000000)),
-    borderRadius: BorderRadius.circular(5.0),
-  );
+  Widget _buildHeader(
+      BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
+    if (!snapshot.hasData) return const Text('Loading...');
+
+    return Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: Container(
+        alignment: AlignmentDirectional.topCenter,
+        padding: const EdgeInsets.all(12.0),
+        child: Text("Current temperature "
+            "(at ${_dateFormat.format(snapshot.data.data['time'])}): "
+            "${_formatDouble(snapshot.data.data['temp'])}°F"),
+      ),
+    );
+  }
+
+  String _formatDouble(double n) {
+    return n.toStringAsFixed(n.truncateToDouble() == n ? 0 : 2);
+  }
+}
+
+class NavigationIconView {
+  NavigationIconView(
+      {Widget icon,
+      String title,
+      Color color,
+      TickerProvider vsync,
+      this.builder})
+      : _color = color,
+        _title = title,
+        item = BottomNavigationBarItem(
+          icon: icon,
+          title: Text(title),
+          backgroundColor: color,
+        ),
+        controller = AnimationController(
+          duration: kThemeAnimationDuration,
+          vsync: vsync,
+        ) {
+    _animation = CurvedAnimation(
+      parent: controller,
+      curve: const Interval(0.5, 1.0, curve: Curves.fastOutSlowIn),
+    );
+  }
+
+  final Color _color;
+  final String _title;
+  final BottomNavigationBarItem item;
+  final AnimationController controller;
+  final WidgetFactory builder;
+  CurvedAnimation _animation;
+
+  FadeTransition transition(
+      BottomNavigationBarType type, BuildContext context) {
+    Color iconColor;
+    if (type == BottomNavigationBarType.shifting) {
+      iconColor = _color;
+    } else {
+      final ThemeData themeData = Theme.of(context);
+      iconColor = themeData.brightness == Brightness.light
+          ? themeData.primaryColor
+          : themeData.accentColor;
+    }
+
+    return FadeTransition(
+      opacity: _animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.0, 0.02), // Slightly down.
+          end: Offset.zero,
+        ).animate(_animation),
+        child: IconTheme(
+          data: IconThemeData(
+            color: iconColor,
+            size: 120.0,
+          ),
+          child: Semantics(
+            label: 'Placeholder for $_title tab',
+            child: builder(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class BottomNav extends StatefulWidget {
+  @override
+  _BottomNavigationDemoState createState() => _BottomNavigationDemoState();
+}
+
+typedef Widget WidgetFactory();
+
+class _BottomNavigationDemoState extends State<BottomNav>
+    with TickerProviderStateMixin {
+  int _currentIndex = 0;
+  List<NavigationIconView> _navigationViews;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _navigationViews = <NavigationIconView>[
+      NavigationIconView(
+          icon: const Icon(Icons.view_list),
+          title: 'Tasks',
+          color: Colors.teal,
+          vsync: this,
+          builder: () => TasksPage(FirestoreRepository(Firestore.instance))),
+      NavigationIconView(
+          icon: const Icon(Icons.whatshot),
+          title: 'Temperature',
+          color: Colors.red,
+          vsync: this,
+          builder: () =>
+              TemperaturePage(FirestoreRepository(Firestore.instance))),
+    ];
+
+    for (NavigationIconView view in _navigationViews)
+      view.controller.addListener(_rebuild);
+
+    _navigationViews[_currentIndex].controller.value = 1.0;
+  }
+
+  @override
+  void dispose() {
+    for (NavigationIconView view in _navigationViews) view.controller.dispose();
+    super.dispose();
+  }
+
+  void _rebuild() {
+    setState(() {
+      // Rebuild in order to animate views.
+    });
+  }
+
+  Widget _buildTransitionsStack() {
+    final List<FadeTransition> transitions = <FadeTransition>[];
+
+    for (NavigationIconView view in _navigationViews)
+      transitions
+          .add(view.transition(BottomNavigationBarType.shifting, context));
+
+    // We want to have the newly animating (fading in) views on top.
+    transitions.sort((FadeTransition a, FadeTransition b) {
+      final Animation<double> aAnimation = a.opacity;
+      final Animation<double> bAnimation = b.opacity;
+      final double aValue = aAnimation.value;
+      final double bValue = bAnimation.value;
+      return aValue.compareTo(bValue);
+    });
+
+    return Stack(children: transitions);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final BottomNavigationBar botNavBar = BottomNavigationBar(
+      items: _navigationViews
+          .map((NavigationIconView navigationView) => navigationView.item)
+          .toList(),
+      currentIndex: _currentIndex,
+      type: BottomNavigationBarType.shifting,
+      onTap: (int index) {
+        setState(() {
+          _navigationViews[_currentIndex].controller.reverse();
+          _currentIndex = index;
+          _navigationViews[_currentIndex].controller.forward();
+        });
+      },
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(appName),
+      ),
+      body: Center(child: _buildTransitionsStack()),
+      bottomNavigationBar: botNavBar,
+    );
+  }
 }
 
 abstract class DataRepository {
