@@ -198,7 +198,7 @@ class _BottomNavigationDemoState extends State<BottomNav>
       NavigationIconView(
           icon: const Icon(Icons.view_list),
           title: 'Tasks',
-          color: Colors.teal,
+          color: Colors.blue,
           vsync: this,
           builder: () => TasksPage(FirestoreRepository(Firestore.instance))),
       NavigationIconView(
