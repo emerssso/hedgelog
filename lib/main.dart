@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:async/async.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:intl/intl.dart';
 
 import 'package:flutter/material.dart';
@@ -30,11 +30,15 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final zip = Observable.zip2(repository.taskStream, repository.currentTempStream,
+        (first, second) => <Object>[first, second],
+    );
+
+    //zip.listen((_) => print("updated data!"));
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: StreamBuilder(
-          stream: StreamZip(
-              [repository.taskStream, repository.currentTempStream]),
+          stream: zip,
           builder: _taskListFactory,
         ),
     );

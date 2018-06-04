@@ -3,6 +3,7 @@ description: An app for keeping track of hedgehog care
 
 dependencies:
   intl: ^0.15.6
+  rxdart: ^0.16.7
   cloud_firestore: ^0.7.0
   flutter:
     sdk: flutter
