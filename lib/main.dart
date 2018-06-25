@@ -42,31 +42,22 @@ class TasksPage extends StatelessWidget {
       padding: const EdgeInsets.only(top: 10.0),
       itemExtent: 55.0,
       itemBuilder: (context, index) =>
-          _buildListItem(context, snapshot.data.documents[index]),
+          _buildListItem(snapshot.data.documents[index]),
     );
   }
 
-  Widget _buildListItem(BuildContext context, DocumentSnapshot task) =>
-      ListTile(
-        key: ValueKey(task.documentID),
-        title: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0x80000000)),
-            borderRadius: BorderRadius.circular(5.0),
+  Widget _buildListItem(DocumentSnapshot task) => _buildListTile(
+      id: task.documentID,
+      onTap: () => _repository.checkTask(task),
+      onLongPress: () => _repository.uncheckTask(task),
+      content: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(task['name']),
           ),
-          padding: const EdgeInsets.all(10.0),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(task['name']),
-              ),
-              _iconFor(task)
-            ],
-          ),
-        ),
-        onTap: () => _repository.checkTask(task),
-        onLongPress: () => _repository.uncheckTask(task),
-      );
+          _iconFor(task)
+        ],
+      ));
 
   Icon _iconFor(DocumentSnapshot task) {
     final isNeeded = task['nextTime']?.isBefore(DateTime.now()) ?? true;
@@ -79,18 +70,110 @@ class TasksPage extends StatelessWidget {
   }
 }
 
+// Generates a consistent list tile between pages
+ListTile _buildListTile(
+        {@required String id,
+        @required Widget content,
+        Function onTap,
+        Function onLongPress}) =>
+    ListTile(
+      key: ValueKey(id),
+      title: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0x80000000)),
+            borderRadius: BorderRadius.circular(5.0),
+          ),
+          padding: const EdgeInsets.all(10.0),
+          child: content),
+      onTap: onTap,
+      onLongPress: onLongPress,
+    );
+
+class AlertsPage extends StatelessWidget {
+  final DataRepository _repository;
+
+  AlertsPage(this._repository);
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: _repository.alertStream,
+      builder: _alertListFactory,
+    );
+  }
+
+  Widget _alertListFactory(BuildContext context, AsyncSnapshot snapshot) {
+    if (!snapshot.hasData) return const Text('Loading...');
+
+    return ListView.builder(
+      itemCount: snapshot.data.documents.length,
+      padding: const EdgeInsets.only(top: 10.0),
+      itemBuilder: (context, index) =>
+          _buildListItem(snapshot.data.documents[index], context),
+    );
+  }
+
+  Widget _buildListItem(DocumentSnapshot alert, BuildContext context) =>
+      _buildListTile(
+          id: alert.documentID,
+          onTap: () {
+            showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                      content: const Text("Do you want to delete this alert?"),
+                      actions: <Widget>[
+                        FlatButton(
+                          child: const Text("NO"),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                        FlatButton(
+                            child: const Text("YES"),
+                            onPressed: () {
+                              _repository.deleteAlert(alert);
+                              Navigator.of(context).pop();
+                            })
+                      ],
+                    ));
+          },
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: alert["active"]
+                ? <Widget>[
+                    Text(alert['message'], style: _alertStyle),
+                    _getStartTime(alert),
+                  ]
+                : <Widget>[
+                    Text(alert['message'], style: _secondaryTextStyle),
+                    _getStartTime(alert),
+                    Text(
+                        alert["end"] != null
+                            ? "End time: ${_dateFormat.format(alert["end"])}"
+                            : "No end",
+                        style: _secondaryTextStyle),
+                  ],
+          ));
+
+  Text _getStartTime(DocumentSnapshot alert) => Text(
+      alert["start"] != null
+          ? "Start time: ${_dateFormat.format(alert["start"])}"
+          : "No start",
+      style: _secondaryTextStyle);
+}
+
+const _alertStyle = TextStyle(color: Colors.red, fontWeight: FontWeight.bold);
+const _secondaryTextStyle =
+    TextStyle(color: Colors.grey, fontStyle: FontStyle.italic);
+
 class TemperaturePage extends StatelessWidget {
   final DataRepository _repository;
 
   TemperaturePage(this._repository);
 
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder(
-      stream: _repository.currentTempStream,
-      builder: _buildHeader,
-    );
-  }
+  Widget build(BuildContext context) => StreamBuilder(
+        stream: _repository.currentTempStream,
+        builder: _buildHeader,
+      );
 
   Widget _buildHeader(
       BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
@@ -202,6 +285,12 @@ class _BottomNavigationDemoState extends State<BottomNav>
           vsync: this,
           builder: () => TasksPage(FirestoreRepository(Firestore.instance))),
       NavigationIconView(
+          icon: const Icon(Icons.warning),
+          title: 'Alerts',
+          color: Colors.purple,
+          vsync: this,
+          builder: () => AlertsPage(FirestoreRepository(Firestore.instance))),
+      NavigationIconView(
           icon: const Icon(Icons.whatshot),
           title: 'Temperature',
           color: Colors.red,
@@ -279,9 +368,13 @@ abstract class DataRepository {
 
   Stream<DocumentSnapshot> get currentTempStream;
 
+  Stream<QuerySnapshot> get alertStream;
+
   checkTask(DocumentSnapshot task);
 
   uncheckTask(DocumentSnapshot task);
+
+  deleteAlert(DocumentSnapshot alert);
 }
 
 class FirestoreRepository implements DataRepository {
@@ -293,13 +386,20 @@ class FirestoreRepository implements DataRepository {
             .orderBy('nextTime', descending: false)
             .snapshots(),
         currentTempStream =
-            firestore.document('temperatures/current').snapshots();
+            firestore.document('temperatures/current').snapshots(),
+        alertStream = firestore
+            .collection('alerts')
+            .orderBy('active', descending: false)
+            .snapshots();
 
   @override
   final Stream<QuerySnapshot> taskStream;
 
   @override
   final Stream<DocumentSnapshot> currentTempStream;
+
+  @override
+  final Stream<QuerySnapshot> alertStream;
 
   @override
   checkTask(DocumentSnapshot task) {
@@ -317,6 +417,14 @@ class FirestoreRepository implements DataRepository {
       DocumentSnapshot freshSnap = await transaction.get(task.reference);
       await transaction.update(freshSnap.reference,
           {'nextTime': DateTime.now().subtract(Duration(minutes: 1))});
+    });
+  }
+
+  @override
+  deleteAlert(DocumentSnapshot alert) {
+    firestore.runTransaction((transaction) async {
+      DocumentSnapshot freshSnap = await transaction.get(alert.reference);
+      await transaction.delete(freshSnap.reference);
     });
   }
 }
