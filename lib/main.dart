@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'package:intl/intl.dart';
 
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 main() => runApp(HedgelogApp());
 
@@ -389,7 +389,7 @@ class FirestoreRepository implements DataRepository {
             firestore.document('temperatures/current').snapshots(),
         alertStream = firestore
             .collection('alerts')
-            .orderBy('active', descending: false)
+            .orderBy('start', descending: true)
             .snapshots();
 
   @override
