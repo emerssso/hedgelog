@@ -263,12 +263,12 @@ class NavigationIconView {
 
 class BottomNav extends StatefulWidget {
   @override
-  _BottomNavigationDemoState createState() => _BottomNavigationDemoState();
+  _BottomNavState createState() => _BottomNavState();
 }
 
 typedef Widget WidgetFactory();
 
-class _BottomNavigationDemoState extends State<BottomNav>
+class _BottomNavState extends State<BottomNav>
     with TickerProviderStateMixin {
   int _currentIndex = 0;
   List<NavigationIconView> _navigationViews;
