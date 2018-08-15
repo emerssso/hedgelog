@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -8,11 +9,20 @@ main() => runApp(HedgelogApp());
 
 const appName = 'Hedgelog';
 
+final FirebaseMessaging _firebaseMessaging = new FirebaseMessaging();
+
 class HedgelogApp extends StatelessWidget {
   const HedgelogApp();
 
   @override
   Widget build(BuildContext context) {
+    _firebaseMessaging.requestNotificationPermissions(
+        const IosNotificationSettings(sound: true, badge: true, alert: true));
+    _firebaseMessaging.onIosSettingsRegistered
+        .listen((IosNotificationSettings settings) {
+      print("Settings registered: $settings");
+    });
+
     return MaterialApp(
       title: appName,
       home: BottomNav(),
