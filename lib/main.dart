@@ -23,6 +23,17 @@ class HedgelogApp extends StatelessWidget {
       print("Settings registered: $settings");
     });
 
+    _firebaseMessaging.subscribeToTopic("alerts");
+
+    _firebaseMessaging.configure(
+      onMessage: (Map<String, dynamic> message) {
+        print("onMessage: $message");
+        Scaffold.of(context).showSnackBar(
+            SnackBar(content: Text("New alert: $message.message"))
+        );
+      },
+    );
+
     return MaterialApp(
       title: appName,
       home: BottomNav(),
