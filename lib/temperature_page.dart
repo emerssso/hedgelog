@@ -20,40 +20,80 @@ class TemperaturePage extends StatelessWidget {
     if (!snapshot.hasData) return const Text('Loading...');
 
     return Container(
-      alignment: AlignmentDirectional.topCenter,
+      alignment: AlignmentDirectional.topStart,
       padding: const EdgeInsets.all(24.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(right: 12),
+                    child: Icon(
+                      snapshot.data.data['lamp']
+                          ? HedgelogIcons.thermometer_up
+                          : HedgelogIcons.thermometer_down,
+                      size: 24,
+                      color: Colors.black,
+                    ),
+                  ),
+                  Text(
+                    "${_formatDouble(snapshot.data.data['temp'])}°F",
+                    style: Theme
+                        .of(context)
+                        .textTheme
+                        .title,
+                  ),
+                ],
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.refresh,
+                  color: Theme
+                      .of(context)
+                      .primaryIconTheme
+                      .color,
+                ),
+                onPressed: _repository.requestSendTemp,
+                padding: EdgeInsets.zero,
+              )
+            ],
+          ),
           Container(
             margin: EdgeInsets.only(bottom: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  margin: const EdgeInsets.only(right: 12),
-                  child: Icon(
-                    snapshot.data.data['lamp']
-                        ? HedgelogIcons.thermometer_up
-                        : HedgelogIcons.thermometer_down,
-                    size: 24,
-                    color: Colors.black,
-                  ),
-                ),
-                Text(
-                  "${_formatDouble(snapshot.data.data['temp'])}°F",
-                  style: Theme.of(context).textTheme.title,
-                ),
-              ],
+            child: Text(
+              "${_dateFormat.format(snapshot.data.data['time'])}",
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .subtitle,
             ),
           ),
-          Text(
-            "${_dateFormat.format(snapshot.data.data['time'])}",
-            style: Theme.of(context).textTheme.subtitle,
+          Divider(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Heat lamp', style: Theme
+                  .of(context)
+                  .textTheme
+                  .title),
+              Switch(
+                value: snapshot.data.data['lamp'],
+                onChanged: _heatLampEnabled(snapshot.data.data['temp'])
+                    ? _repository.requestLampOn
+                    : null,
+              )
+            ],
           ),
         ],
       ),
     );
   }
+
+  bool _heatLampEnabled(double temp) => temp >= 75 && temp <= 78;
 }
 
 final _dateFormat = DateFormat.Hm().addPattern("'on'").add_Md();

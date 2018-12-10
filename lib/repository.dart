@@ -9,11 +9,15 @@ abstract class DataRepository {
 
   Stream<QuerySnapshot> get alertStream;
 
-  checkTask(DocumentSnapshot task);
+  void checkTask(DocumentSnapshot task);
 
-  uncheckTask(DocumentSnapshot task);
+  void uncheckTask(DocumentSnapshot task);
 
-  deleteAlert(DocumentSnapshot alert);
+  void deleteAlert(DocumentSnapshot alert);
+
+  void requestLampOn(bool lampOn);
+
+  void requestSendTemp();
 }
 
 class FirestoreRepository implements DataRepository {
@@ -41,7 +45,7 @@ class FirestoreRepository implements DataRepository {
   final Stream<QuerySnapshot> alertStream;
 
   @override
-  checkTask(DocumentSnapshot task) {
+  void checkTask(DocumentSnapshot task) {
     firestore.runTransaction((transaction) async {
       DocumentSnapshot freshSnap = await transaction.get(task.reference);
       await transaction.update(freshSnap.reference, {
@@ -51,7 +55,7 @@ class FirestoreRepository implements DataRepository {
   }
 
   @override
-  uncheckTask(DocumentSnapshot task) {
+  void uncheckTask(DocumentSnapshot task) {
     firestore.runTransaction((transaction) async {
       DocumentSnapshot freshSnap = await transaction.get(task.reference);
       await transaction.update(freshSnap.reference,
@@ -60,10 +64,23 @@ class FirestoreRepository implements DataRepository {
   }
 
   @override
-  deleteAlert(DocumentSnapshot alert) {
+  void deleteAlert(DocumentSnapshot alert) {
     firestore.runTransaction((transaction) async {
       DocumentSnapshot freshSnap = await transaction.get(alert.reference);
       await transaction.delete(freshSnap.reference);
     });
+  }
+
+  @override
+  void requestLampOn(bool lampOn) async {
+    await firestore
+        .document('commands/lamp')
+        .setData({'active': true, 'target': lampOn});
+  }
+
+  @override
+  void requestSendTemp() async {
+    var document = firestore.document('commands/sendTemp');
+    await document.setData({'active': true});
   }
 }

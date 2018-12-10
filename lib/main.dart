@@ -34,9 +34,16 @@ class HedgelogApp extends StatelessWidget {
       },
     );
 
+    var iconTheme = IconThemeData.fallback().copyWith(color: Colors.purple);
     return MaterialApp(
       title: appName,
       home: BottomNav(),
+      theme: ThemeData.light().copyWith(
+        primaryColor: Colors.purple,
+        buttonColor: Colors.purple,
+        iconTheme: iconTheme,
+        primaryIconTheme: iconTheme,
+      ),
     );
   }
 }
