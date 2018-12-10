@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:hedgelog/hedgelog_icons.dart';
 import 'package:hedgelog/repository.dart';
 import 'package:intl/intl.dart';
 
@@ -198,14 +199,41 @@ class TemperaturePage extends StatelessWidget {
       BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
     if (!snapshot.hasData) return const Text('Loading...');
 
-    return Padding(
-      padding: const EdgeInsets.all(10.0),
-      child: Container(
-        alignment: AlignmentDirectional.topCenter,
-        padding: const EdgeInsets.all(12.0),
-        child: Text("Current temperature "
-            "(at ${_dateFormat.format(snapshot.data.data['time'])}): "
-            "${_formatDouble(snapshot.data.data['temp'])}°F"),
+    return Container(
+      alignment: AlignmentDirectional.topCenter,
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                margin: EdgeInsets.only(right: 12),
+                child: Icon(
+                  snapshot.data.data['lamp']
+                      ? HedgelogIcons.thermometer_up
+                      : HedgelogIcons.thermometer_down,
+                  size: 24,
+                  color: Colors.black,
+                ),
+              ),
+              Text(
+                "${_formatDouble(snapshot.data.data['temp'])}°F",
+                style: Theme
+                    .of(context)
+                    .textTheme
+                    .title,
+              ),
+            ],
+          ),
+          Text(
+            "${_dateFormat.format(snapshot.data.data['time'])}",
+            style: Theme
+                .of(context)
+                .textTheme
+                .subtitle,
+          ),
+        ],
       ),
     );
   }
@@ -285,7 +313,7 @@ class BottomNav extends StatefulWidget {
   _BottomNavState createState() => _BottomNavState();
 }
 
-typedef Widget WidgetFactory();
+typedef WidgetFactory = Widget Function();
 
 class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
   int _currentIndex = 0;
@@ -295,13 +323,7 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
-    _navigationViews = <NavigationIconView>[
-      NavigationIconView(
-          icon: const Icon(Icons.view_list),
-          title: 'Tasks',
-          color: Colors.blue,
-          vsync: this,
-          builder: () => TasksPage(FirestoreRepository(Firestore.instance))),
+    _navigationViews = [
       NavigationIconView(
           icon: const Icon(Icons.warning),
           title: 'Alerts',
@@ -309,7 +331,7 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
           vsync: this,
           builder: () => AlertsPage(FirestoreRepository(Firestore.instance))),
       NavigationIconView(
-          icon: const Icon(Icons.whatshot),
+          icon: const Icon(HedgelogIcons.thermometer),
           title: 'Temperature',
           color: Colors.red,
           vsync: this,
