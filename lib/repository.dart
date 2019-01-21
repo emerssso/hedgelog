@@ -15,6 +15,8 @@ abstract class DataRepository {
 
   void deleteAlert(DocumentSnapshot alert);
 
+  void clearAllAlerts();
+
   void requestLampOn(bool lampOn);
 
   void requestSendTemp();
@@ -69,6 +71,22 @@ class FirestoreRepository implements DataRepository {
       DocumentSnapshot freshSnap = await transaction.get(alert.reference);
       await transaction.delete(freshSnap.reference);
     });
+  }
+
+  @override
+  void clearAllAlerts() async {
+    final batch = firestore.batch();
+
+    final deadAlerts = await firestore
+        .collection('alerts')
+        .where('active', isEqualTo: false)
+        .getDocuments();
+
+    for (final alert in deadAlerts.documents) {
+      batch.delete(alert.reference);
+    }
+
+    batch.commit();
   }
 
   @override

@@ -121,6 +121,7 @@ class BottomNav extends StatefulWidget {
 class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
   int _currentIndex = 0;
   List<NavigationIconView> _navigationViews;
+  DataRepository _repository = FirestoreRepository(Firestore.instance);
 
   @override
   void initState() {
@@ -178,6 +179,15 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
       Scaffold(
         appBar: AppBar(
           title: const Text(appName),
+          actions: [
+            IconButton(
+              onPressed: () => showAlertDeleteConfirmation(context),
+              icon: Icon(
+                Icons.clear_all,
+                color: Colors.white,
+              ),
+            ),
+          ],
         ),
         body: Center(child: _buildTransitionsStack()),
         bottomNavigationBar: BottomNavigationBar(
@@ -195,4 +205,25 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
           },
         ),
       );
+
+  void showAlertDeleteConfirmation(BuildContext context) {
+    showDialog(
+        context: context,
+        builder: (context) =>
+            AlertDialog(
+              content: const Text("Delete ALL inactive alerts?"),
+              actions: <Widget>[
+                FlatButton(
+                  child: const Text("NO"),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                FlatButton(
+                    child: const Text("YES"),
+                    onPressed: () {
+                      _repository.clearAllAlerts();
+                      Navigator.of(context).pop();
+                    })
+              ],
+            ));
+  }
 }
