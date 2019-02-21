@@ -21,16 +21,16 @@ class HedgelogApp extends StatelessWidget {
         const IosNotificationSettings(sound: true, badge: true, alert: true));
     _firebaseMessaging.onIosSettingsRegistered
         .listen((IosNotificationSettings settings) {
-      print("Settings registered: $settings");
+      print('Settings registered: $settings');
     });
 
-    _firebaseMessaging.subscribeToTopic("alerts");
+    _firebaseMessaging.subscribeToTopic('alerts');
 
     _firebaseMessaging.configure(
       onMessage: (Map<String, dynamic> message) {
-        print("onMessage: $message");
+        print('onMessage: $message');
         Scaffold.of(context).showSnackBar(
-            SnackBar(content: Text("New alert: $message.message")));
+            SnackBar(content: Text('New alert: $message.message')));
       },
     );
 
@@ -211,14 +211,14 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
         context: context,
         builder: (context) =>
             AlertDialog(
-              content: const Text("Delete ALL inactive alerts?"),
+              content: const Text('Delete ALL inactive alerts?'),
               actions: <Widget>[
                 FlatButton(
-                  child: const Text("NO"),
+                  child: const Text('NO'),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
                 FlatButton(
-                    child: const Text("YES"),
+                    child: const Text('YES'),
                     onPressed: () {
                       _repository.clearAllAlerts();
                       Navigator.of(context).pop();

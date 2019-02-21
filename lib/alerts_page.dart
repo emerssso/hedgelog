@@ -35,14 +35,14 @@ class AlertsPage extends StatelessWidget {
             showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                      content: const Text("Do you want to delete this alert?"),
+                      content: const Text('Do you want to delete this alert?'),
                       actions: <Widget>[
                         FlatButton(
-                          child: const Text("NO"),
+                          child: const Text('NO'),
                           onPressed: () => Navigator.of(context).pop(),
                         ),
                         FlatButton(
-                            child: const Text("YES"),
+                            child: const Text('YES'),
                             onPressed: () {
                               _repository.deleteAlert(alert);
                               Navigator.of(context).pop();
@@ -52,7 +52,7 @@ class AlertsPage extends StatelessWidget {
           },
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: alert["active"]
+            children: alert['active']
                 ? <Widget>[
                     Text(alert['message'], style: _alertStyle),
                     _getStartTime(alert),
@@ -61,17 +61,17 @@ class AlertsPage extends StatelessWidget {
                     Text(alert['message'], style: _secondaryTextStyle),
                     _getStartTime(alert),
                     Text(
-                        alert["end"] != null
-                            ? "End time: ${_dateFormat.format(alert["end"])}"
-                            : "No end",
+                        alert['end'] != null
+                            ? 'End time: ${_dateFormat.format(alert['end'])}'
+                            : 'No end',
                         style: _secondaryTextStyle),
                   ],
           ));
 
   Text _getStartTime(DocumentSnapshot alert) => Text(
-      alert["start"] != null
-          ? "Start time: ${_dateFormat.format(alert["start"])}"
-          : "No start",
+      alert['start'] != null
+          ? 'Start time: ${_dateFormat.format(alert['start'])}'
+          : 'No start',
       style: _secondaryTextStyle);
 }
 
@@ -79,4 +79,4 @@ const _alertStyle = TextStyle(color: Colors.red, fontWeight: FontWeight.bold);
 const _secondaryTextStyle =
     TextStyle(color: Colors.grey, fontStyle: FontStyle.italic);
 
-final _dateFormat = DateFormat.Hm().addPattern("'on'").add_Md();
+final _dateFormat = DateFormat.Hm().addPattern('\'on\'').add_Md();

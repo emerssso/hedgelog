@@ -41,7 +41,7 @@ class TemperaturePage extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    "${_formatDouble(snapshot.data.data['temp'])}°F",
+                    '${_formatDouble(snapshot.data.data['temp'])}°F',
                     style: Theme
                         .of(context)
                         .textTheme
@@ -65,7 +65,7 @@ class TemperaturePage extends StatelessWidget {
           Container(
             margin: EdgeInsets.only(bottom: 24),
             child: Text(
-              "${_dateFormat.format(snapshot.data.data['time'])}",
+              '${_dateFormat.format(snapshot.data.data['time'])}',
               style: Theme
                   .of(context)
                   .textTheme
@@ -96,7 +96,7 @@ class TemperaturePage extends StatelessWidget {
   bool _heatLampEnabled(double temp) => temp >= 75 && temp <= 78;
 }
 
-final _dateFormat = DateFormat.Hm().addPattern("'on'").add_Md();
+final _dateFormat = DateFormat.Hm().addPattern('\'on\'').add_Md();
 
 String _formatDouble(double n) {
   return n.toStringAsFixed(n.truncateToDouble() == n ? 0 : 2);
