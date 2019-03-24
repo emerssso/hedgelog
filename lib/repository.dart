@@ -79,6 +79,7 @@ class FirestoreRepository implements DataRepository {
     final deadAlerts = await firestore
         .collection('alerts')
         .where('active', isEqualTo: false)
+        .orderBy('start')
         .limit(500)
         .getDocuments();
 
