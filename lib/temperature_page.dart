@@ -7,17 +7,19 @@ import 'package:intl/intl.dart';
 class TemperaturePage extends StatelessWidget {
   final DataRepository _repository;
 
-  TemperaturePage(this._repository);
+  const TemperaturePage(this._repository);
 
   @override
-  Widget build(BuildContext context) => StreamBuilder(
+  Widget build(BuildContext context) {
+    return StreamBuilder(
         stream: _repository.currentTempStream,
         builder: _buildHeader,
       );
+  }
 
   Widget _buildHeader(
       BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
-    if (!snapshot.hasData) return const Text('Loading...');
+    if (!snapshot.hasData) return CircularProgressIndicator();
 
     return Container(
       alignment: AlignmentDirectional.topStart,
@@ -42,20 +44,14 @@ class TemperaturePage extends StatelessWidget {
                   ),
                   Text(
                     '${_formatDouble(snapshot.data.data['temp'])}°F',
-                    style: Theme
-                        .of(context)
-                        .textTheme
-                        .title,
+                    style: Theme.of(context).textTheme.title,
                   ),
                 ],
               ),
               IconButton(
                 icon: Icon(
                   Icons.refresh,
-                  color: Theme
-                      .of(context)
-                      .primaryIconTheme
-                      .color,
+                  color: Theme.of(context).primaryIconTheme.color,
                 ),
                 onPressed: _repository.requestSendTemp,
                 padding: EdgeInsets.zero,
@@ -66,20 +62,14 @@ class TemperaturePage extends StatelessWidget {
             margin: EdgeInsets.only(bottom: 24),
             child: Text(
               '${_dateFormat.format(snapshot.data.data['time'])}',
-              style: Theme
-                  .of(context)
-                  .textTheme
-                  .subtitle,
+              style: Theme.of(context).textTheme.subtitle,
             ),
           ),
           Divider(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Heat lamp', style: Theme
-                  .of(context)
-                  .textTheme
-                  .title),
+              Text('Heat lamp', style: Theme.of(context).textTheme.title),
               Switch(
                 value: snapshot.data.data['lamp'],
                 onChanged: _heatLampEnabled(snapshot.data.data['temp'])

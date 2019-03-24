@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:hedgelog/alerts_page.dart';
+import 'package:hedgelog/sign_in.dart';
 import 'package:hedgelog/hedgelog_icons.dart';
 import 'package:hedgelog/repository.dart';
 import 'package:hedgelog/temperature_page.dart';
@@ -10,7 +11,7 @@ main() => runApp(HedgelogApp());
 
 const appName = 'Hedgelog';
 
-final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+final _firebaseMessaging = FirebaseMessaging();
 
 class HedgelogApp extends StatelessWidget {
   const HedgelogApp();
@@ -49,18 +50,16 @@ class HedgelogApp extends StatelessWidget {
 }
 
 class NavigationIconView {
-  NavigationIconView(
-      {Widget icon,
-      String title,
-      Color color,
-      TickerProvider vsync,
-      this.builder})
-      : _color = color,
-        _title = title,
+  NavigationIconView({
+    Widget icon,
+    String title,
+    TickerProvider vsync,
+    this.builder,
+  })  : _title = title,
         item = BottomNavigationBarItem(
           icon: icon,
           title: Text(title),
-          backgroundColor: color,
+          backgroundColor: Colors.purple,
         ),
         controller = AnimationController(
           duration: kThemeAnimationDuration,
@@ -72,7 +71,6 @@ class NavigationIconView {
     );
   }
 
-  final Color _color;
   final String _title;
   final BottomNavigationBarItem item;
   final AnimationController controller;
@@ -81,15 +79,10 @@ class NavigationIconView {
 
   FadeTransition transition(
       BottomNavigationBarType type, BuildContext context) {
-    Color iconColor;
-    if (type == BottomNavigationBarType.shifting) {
-      iconColor = _color;
-    } else {
-      final ThemeData themeData = Theme.of(context);
-      iconColor = themeData.brightness == Brightness.light
-          ? themeData.primaryColor
-          : themeData.accentColor;
-    }
+    final ThemeData themeData = Theme.of(context);
+    final iconColor = themeData.brightness == Brightness.light
+        ? themeData.primaryColor
+        : themeData.accentColor;
 
     return FadeTransition(
       opacity: _animation,
@@ -121,26 +114,40 @@ class BottomNav extends StatefulWidget {
 class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
   int _currentIndex = 0;
   List<NavigationIconView> _navigationViews;
-  DataRepository _repository = FirestoreRepository(Firestore.instance);
+  final signInBloc = SignInBloc();
+
+  DataRepository _repository;
+
+  _BottomNavState();
 
   @override
   void initState() {
     super.initState();
+    _repository = FirestoreRepository(Firestore.instance, signInBloc);
 
     _navigationViews = [
       NavigationIconView(
-          icon: const Icon(Icons.warning),
-          title: 'Alerts',
-          color: Colors.purple,
-          vsync: this,
-          builder: () => AlertsPage(FirestoreRepository(Firestore.instance))),
+        icon: const Icon(Icons.warning),
+        title: 'Alerts',
+        vsync: this,
+        builder: () => AlertsPage(
+              FirestoreRepository(
+                Firestore.instance,
+                signInBloc,
+              ),
+            ),
+      ),
       NavigationIconView(
-          icon: const Icon(HedgelogIcons.thermometer),
-          title: 'Temperature',
-          color: Colors.red,
-          vsync: this,
-          builder: () =>
-              TemperaturePage(FirestoreRepository(Firestore.instance))),
+        icon: const Icon(HedgelogIcons.thermometer),
+        title: 'Temperature',
+        vsync: this,
+        builder: () => TemperaturePage(
+              FirestoreRepository(
+                Firestore.instance,
+                signInBloc,
+              ),
+            ),
+      ),
     ];
 
     for (NavigationIconView view in _navigationViews)
@@ -175,8 +182,7 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      Scaffold(
+  Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
           title: const Text(appName),
           actions: [
@@ -189,7 +195,22 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
             ),
           ],
         ),
-        body: Center(child: _buildTransitionsStack()),
+        body: Center(
+          child: StreamBuilder<SignIn>(
+            stream: _repository.signInBloc.state,
+            builder: (context, snap) {
+              final signIn = snap.data ?? SignIn.signedOut;
+              switch (signIn) {
+                case SignIn.signedIn:
+                  return _buildTransitionsStack();
+                case SignIn.startSignIn:
+                  return const CircularProgressIndicator();
+                default:
+                  return SignInButton(bloc: _repository.signInBloc);
+              }
+            },
+          ),
+        ),
         bottomNavigationBar: BottomNavigationBar(
           items: _navigationViews
               .map((NavigationIconView navigationView) => navigationView.item)
@@ -209,8 +230,7 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
   void showAlertDeleteConfirmation(BuildContext context) {
     showDialog(
         context: context,
-        builder: (context) =>
-            AlertDialog(
+        builder: (context) => AlertDialog(
               content: const Text('Delete ALL inactive alerts?'),
               actions: <Widget>[
                 FlatButton(

@@ -1,9 +1,10 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hedgelog/sign_in.dart';
 
 abstract class DataRepository {
-  Stream<QuerySnapshot> get taskStream;
+  SignInBloc get signInBloc;
 
   Stream<DocumentSnapshot> get currentTempStream;
 
@@ -24,21 +25,16 @@ abstract class DataRepository {
 
 class FirestoreRepository implements DataRepository {
   final Firestore firestore;
+  @override
+  final SignInBloc signInBloc;
 
-  FirestoreRepository(this.firestore)
-      : taskStream = firestore
-            .collection('tasks')
-            .orderBy('nextTime', descending: false)
-            .snapshots(),
-        currentTempStream =
+  FirestoreRepository(this.firestore, this.signInBloc)
+      : currentTempStream =
             firestore.document('temperatures/current').snapshots(),
         alertStream = firestore
             .collection('alerts')
             .orderBy('start', descending: true)
             .snapshots();
-
-  @override
-  final Stream<QuerySnapshot> taskStream;
 
   @override
   final Stream<DocumentSnapshot> currentTempStream;
@@ -72,6 +68,9 @@ class FirestoreRepository implements DataRepository {
       await transaction.delete(freshSnap.reference);
     });
   }
+
+  Future<void> deleteAlertById(String id) =>
+      firestore.document('alerts/$id').delete();
 
   @override
   void clearAllAlerts() async {

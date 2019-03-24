@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 class AlertsPage extends StatelessWidget {
   final DataRepository _repository;
 
-  AlertsPage(this._repository);
+  const AlertsPage(this._repository);
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +18,7 @@ class AlertsPage extends StatelessWidget {
   }
 
   Widget _alertListFactory(BuildContext context, AsyncSnapshot snapshot) {
-    if (!snapshot.hasData) return const Text('Loading...');
+    if (!snapshot.hasData) return CircularProgressIndicator();
 
     return ListView.builder(
       itemCount: snapshot.data.documents.length,
