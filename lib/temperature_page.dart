@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hedgelog/hedgelog_icons.dart';
 import 'package:hedgelog/repository.dart';
+import 'package:hedgelog/widgets.dart';
 import 'package:intl/intl.dart';
 
 class TemperaturePage extends StatelessWidget {
@@ -12,14 +13,14 @@ class TemperaturePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-        stream: _repository.currentTempStream,
-        builder: _buildHeader,
-      );
+      stream: _repository.currentTempStream,
+      builder: _buildHeader,
+    );
   }
 
   Widget _buildHeader(
       BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
-    if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+    if (!snapshot.hasData) return const HedgelogProgressIndicator();
 
     return Container(
       alignment: AlignmentDirectional.topStart,
@@ -39,7 +40,7 @@ class TemperaturePage extends StatelessWidget {
                           ? HedgelogIcons.thermometer_up
                           : HedgelogIcons.thermometer_down,
                       size: 24,
-                      color: Colors.black,
+                      color: Theme.of(context).textTheme.title.color,
                     ),
                   ),
                   Text(

@@ -27,3 +27,16 @@ class HedgelogListTile extends StatelessWidget {
         onLongPress: onLongPress,
       );
 }
+
+class HedgelogProgressIndicator extends StatelessWidget {
+  const HedgelogProgressIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation(Colors.purple),
+      ),
+    );
+  }
+}

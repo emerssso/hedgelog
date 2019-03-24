@@ -6,6 +6,7 @@ import 'package:hedgelog/sign_in.dart';
 import 'package:hedgelog/hedgelog_icons.dart';
 import 'package:hedgelog/repository.dart';
 import 'package:hedgelog/temperature_page.dart';
+import 'package:hedgelog/widgets.dart';
 
 main() => runApp(HedgelogApp());
 
@@ -44,6 +45,7 @@ class HedgelogApp extends StatelessWidget {
         buttonColor: Colors.purple,
         iconTheme: iconTheme,
         primaryIconTheme: iconTheme,
+        toggleableActiveColor: Colors.purple
       ),
     );
   }
@@ -204,7 +206,7 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
                 case SignIn.signedIn:
                   return _buildTransitionsStack();
                 case SignIn.startSignIn:
-                  return const CircularProgressIndicator();
+                  return const HedgelogProgressIndicator();
                 default:
                   return SignInButton(bloc: _repository.signInBloc);
               }

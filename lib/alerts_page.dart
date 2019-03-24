@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hedgelog/hedgelog_icons.dart';
-import 'package:hedgelog/list_tile.dart';
 import 'package:hedgelog/repository.dart';
+import 'package:hedgelog/widgets.dart';
 import 'package:intl/intl.dart';
 
 class AlertsPage extends StatelessWidget {
@@ -20,8 +20,7 @@ class AlertsPage extends StatelessWidget {
 
   Widget _alertListFactory(
       BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-    if (!snapshot.hasData)
-      return const Center(child: CircularProgressIndicator());
+    if (!snapshot.hasData) return const HedgelogProgressIndicator();
 
     if (snapshot.data.documents.length == 0) {
       return Stack(
@@ -29,17 +28,17 @@ class AlertsPage extends StatelessWidget {
           Center(
             child: Icon(
               HedgelogIcons.hedgehog,
-              color: Colors.green.shade400,
+              color: Colors.grey.shade500,
             ),
           ),
           Align(
             alignment: Alignment(0, .16),
             child: Text(
-              'No alerts!',
+              'No alerts',
               style: Theme.of(context)
                   .textTheme
                   .headline
-                  .copyWith(color: Colors.green.shade400),
+                  .copyWith(color: Colors.grey.shade500),
             ),
           ),
         ],
