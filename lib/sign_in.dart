@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:meta/meta.dart';
+import 'package:flutter_auth_buttons/flutter_auth_buttons.dart';
 
 final _googleSignIn = GoogleSignIn();
 final _auth = FirebaseAuth.instance;
@@ -26,7 +27,7 @@ class SignInBloc extends Bloc<SignIn, SignIn> {
     try {
       final GoogleSignInAccount googleUser = await _googleSignIn.signIn();
       final GoogleSignInAuthentication googleAuth =
-      await googleUser?.authentication;
+          await googleUser?.authentication;
 
       if (googleAuth == null) {
         debugPrint('Unable to log in');
@@ -46,7 +47,7 @@ class SignInBloc extends Bloc<SignIn, SignIn> {
       }
 
       return user;
-    } catch(_) {
+    } catch (_) {
       dispatch(SignIn.signInFailed);
       return null;
     }
@@ -84,8 +85,8 @@ class SignInButton extends StatelessWidget {
                   );
           },
         ),
-        RaisedButton(
-          child: Text('Sign in'),
+        GoogleSignInButton(
+          darkMode: true,
           onPressed: () => bloc.dispatch(SignIn.startSignIn),
         ),
       ],
