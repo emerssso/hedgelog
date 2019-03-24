@@ -8,4 +8,5 @@ build/
 
 .flutter-plugins
 pubspec.lock
-.vscode/launch.json
+.vscode/
+.idea/
