@@ -231,7 +231,7 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
     showDialog(
         context: context,
         builder: (context) => AlertDialog(
-              content: const Text('Delete ALL inactive alerts?'),
+              content: const Text('Delete 500 oldest inactive alerts?'),
               actions: <Widget>[
                 FlatButton(
                   child: const Text('NO'),
