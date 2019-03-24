@@ -19,7 +19,7 @@ class TemperaturePage extends StatelessWidget {
 
   Widget _buildHeader(
       BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
-    if (!snapshot.hasData) return CircularProgressIndicator();
+    if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
     return Container(
       alignment: AlignmentDirectional.topStart,

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:hedgelog/hedgelog_icons.dart';
 import 'package:hedgelog/list_tile.dart';
 import 'package:hedgelog/repository.dart';
 import 'package:intl/intl.dart';
@@ -17,8 +18,33 @@ class AlertsPage extends StatelessWidget {
     );
   }
 
-  Widget _alertListFactory(BuildContext context, AsyncSnapshot snapshot) {
-    if (!snapshot.hasData) return CircularProgressIndicator();
+  Widget _alertListFactory(
+      BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+    if (!snapshot.hasData)
+      return const Center(child: CircularProgressIndicator());
+
+    if (snapshot.data.documents.length == 0) {
+      return Stack(
+        children: [
+          Center(
+            child: Icon(
+              HedgelogIcons.hedgehog,
+              color: Colors.green.shade400,
+            ),
+          ),
+          Align(
+            alignment: Alignment(0, .16),
+            child: Text(
+              'No alerts!',
+              style: Theme.of(context)
+                  .textTheme
+                  .headline
+                  .copyWith(color: Colors.green.shade400),
+            ),
+          ),
+        ],
+      );
+    }
 
     return ListView.builder(
       itemCount: snapshot.data.documents.length,
